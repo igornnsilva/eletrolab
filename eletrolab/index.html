@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EletroLab - Simulador Interativo de Campos Eletricos</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Laboratorio virtual de eletrostatica - Fisica 3</p>
+      <h1>EletroLab</h1>
+      <p class="subtitle">Simulador Interativo de Campos Eletricos</p>
+    </div>
+    <button id="openPhysicsModal" class="button button-secondary" type="button" aria-label="Abrir fundamentacao fisica">
+      Fundamentacao fisica
+    </button>
+  </header>
+
+  <main>
+    <section class="simulator-shell" aria-label="Laboratorio interativo">
+      <aside class="panel controls-panel" aria-label="Controles da simulacao">
+        <div class="panel-section">
+          <h2>Adicionar elementos</h2>
+          <div class="button-grid">
+            <button class="button button-positive" data-add-mode="positive" type="button" aria-label="Adicionar carga positiva no proximo clique do canvas">+ Carga positiva</button>
+            <button class="button button-negative" data-add-mode="negative" type="button" aria-label="Adicionar carga negativa no proximo clique do canvas">- Carga negativa</button>
+            <button class="button button-test" data-add-mode="test" type="button" aria-label="Adicionar carga de prova no proximo clique do canvas">q Carga de prova</button>
+          </div>
+          <p id="insertModeHint" class="helper-text">Escolha um elemento e clique no canvas para inserir.</p>
+        </div>
+
+        <div class="panel-section">
+          <h2>Visualizacao</h2>
+          <label class="check-row"><input id="showFieldVectors" type="checkbox" checked> Vetores do campo</label>
+          <label class="check-row"><input id="showFieldLines" type="checkbox" checked> Linhas de campo</label>
+          <label class="check-row"><input id="showPotentialMap" type="checkbox" checked> Mapa de potencial</label>
+          <label class="check-row"><input id="showEquipotentials" type="checkbox" checked> Linhas equipotenciais</label>
+          <label class="check-row"><input id="showGrid" type="checkbox" checked> Grade</label>
+          <label class="check-row"><input id="showChargeValues" type="checkbox" checked> Valores das cargas</label>
+          <label class="check-row"><input id="showForceVector" type="checkbox" checked> Vetor da forca nas cargas de prova</label>
+        </div>
+
+        <div class="panel-section">
+          <h2>Densidade visual</h2>
+          <label class="range-row" for="vectorDensity">
+            <span>Densidade dos vetores</span>
+            <input id="vectorDensity" type="range" min="28" max="90" value="46" step="2">
+          </label>
+          <label class="range-row" for="fieldLineCount">
+            <span>Linhas de campo</span>
+            <input id="fieldLineCount" type="range" min="4" max="36" value="18" step="2">
+          </label>
+          <label class="range-row" for="vectorIntensity">
+            <span>Intensidade dos vetores</span>
+            <input id="vectorIntensity" type="range" min="0.5" max="2.5" value="1.1" step="0.1">
+          </label>
+          <label class="range-row" for="potentialAlpha">
+            <span>Transparencia do potencial</span>
+            <input id="potentialAlpha" type="range" min="0.1" max="0.85" value="0.42" step="0.05">
+          </label>
+        </div>
+
+        <div class="panel-section">
+          <h2>Configuracoes prontas</h2>
+          <div class="preset-grid">
+            <button class="button button-secondary" data-preset="dipole" type="button" aria-label="Carregar dipolo eletrico">Dipolo eletrico</button>
+            <button class="button button-secondary" data-preset="twoPositive" type="button" aria-label="Carregar duas cargas positivas">Duas positivas</button>
+            <button class="button button-secondary" data-preset="twoNegative" type="button" aria-label="Carregar duas cargas negativas">Duas negativas</button>
+            <button class="button button-secondary" data-preset="quadrupole" type="button" aria-label="Carregar quadrupolo">Quadrupolo</button>
+            <button class="button button-secondary" data-preset="centralPositive" type="button" aria-label="Carregar carga positiva central">Positiva central</button>
+            <button id="clearSimulation" class="button button-danger" type="button" aria-label="Limpar toda a simulacao">Limpar</button>
+          </div>
+          <button id="togglePause" class="button button-wide" type="button" aria-label="Pausar ou continuar visualizacao">Pausar visualizacao</button>
+        </div>
+      </aside>
+
+      <section class="canvas-column">
+        <div class="canvas-toolbar">
+          <div>
+            <strong>Area de simulacao</strong>
+            <span id="stateBadge" class="state-badge">Em execucao</span>
+          </div>
+          <span class="helper-text">Arraste as cargas. Delete/Backspace remove a carga selecionada.</span>
+        </div>
+        <div id="canvasWrap" class="canvas-wrap">
+          <canvas id="simulationCanvas" aria-label="Canvas de simulacao de campo eletrico"></canvas>
+        </div>
+      </section>
+
+      <aside class="panel info-panel" aria-label="Resultados e propriedades">
+        <div class="panel-section">
+          <h2>Carga selecionada</h2>
+          <div id="selectedChargePanel" class="data-stack" aria-live="polite">
+            <p class="empty-state">Nenhuma carga selecionada.</p>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h2>Resultados no ponto selecionado</h2>
+          <div id="resultsPanel" class="data-stack" aria-live="polite">
+            <p class="empty-state">Selecione uma carga de prova para ver campo, potencial e forca.</p>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h2>Informacoes da simulacao</h2>
+          <div id="simulationInfoPanel" class="data-stack"></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="experiments-section" aria-labelledby="experimentsTitle">
+      <div class="section-heading">
+        <p class="eyebrow">Roteiro didatico</p>
+        <h2 id="experimentsTitle">Experimentos sugeridos</h2>
+      </div>
+      <div class="experiment-grid">
+        <article class="experiment-card">
+          <h3>Experimento 1 - Uma carga positiva</h3>
+          <p>Observe o campo apontando radialmente para fora e o potencial positivo ao redor da carga.</p>
+        </article>
+        <article class="experiment-card">
+          <h3>Experimento 2 - Uma carga negativa</h3>
+          <p>Veja os vetores apontando para dentro e o mapa indicando potencial negativo.</p>
+        </article>
+        <article class="experiment-card">
+          <h3>Experimento 3 - Dipolo eletrico</h3>
+          <p>Analise as linhas saindo da positiva e chegando a negativa, com regioes de potencial proximo de zero.</p>
+        </article>
+        <article class="experiment-card">
+          <h3>Experimento 4 - Duas cargas positivas</h3>
+          <p>Identifique a repulsao e o ponto central onde o campo pode ficar aproximadamente nulo.</p>
+        </article>
+        <article class="experiment-card">
+          <h3>Experimento 5 - Carga de prova</h3>
+          <p>Mova q0, verifique direcao e modulo da forca, e compare forca eletrica com campo eletrico.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div id="physicsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="physicsModalTitle" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="physicsModalTitle">Fundamentacao fisica</h2>
+        <button class="icon-button" data-close-modal type="button" aria-label="Fechar fundamentacao fisica">x</button>
+      </div>
+      <div class="modal-content">
+        <h3>Lei de Coulomb</h3>
+        <p><code>F = k|q1q2|/r^2</code>. Cargas de mesmo sinal se repelem; cargas de sinais opostos se atraem.</p>
+        <h3>Campo eletrico</h3>
+        <p><code>E = F/q0</code> e, para uma carga puntiforme, <code>E = k|q|/r^2</code>. O campo sai de cargas positivas e entra em cargas negativas.</p>
+        <h3>Superposicao</h3>
+        <p>O campo resultante e a soma vetorial dos campos gerados por todas as cargas-fonte.</p>
+        <h3>Potencial eletrico</h3>
+        <p><code>V = kq/r</code>. O potencial e escalar: sinais positivos e negativos se somam algebricamente.</p>
+        <h3>Forca sobre a carga de prova</h3>
+        <p><code>F = q0E</code>. Uma carga de prova positiva sofre forca no sentido do campo; uma negativa sofre no sentido oposto.</p>
+        <h3>Linhas de campo</h3>
+        <p>Saem de cargas positivas, entram em negativas, nao se cruzam e ficam mais densas onde o campo e mais intenso.</p>
+        <h3>Linhas equipotenciais</h3>
+        <p>Representam pontos de mesmo potencial, sao aproximadamente perpendiculares as linhas de campo e indicam deslocamentos com trabalho eletrico nulo.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="js/physics.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
